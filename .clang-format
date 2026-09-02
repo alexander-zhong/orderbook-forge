@@ -1,0 +1,8 @@
+# Formatting rules for the whole project.
+# clang-format (and the VS Code C/C++ extension) auto-detects this file.
+BasedOnStyle: Google
+
+# A few explicit knobs (these match Google's defaults; listed so they're visible):
+IndentWidth: 2
+ColumnLimit: 100          # Google's default is 80; 100 is a common, roomier choice
+PointerAlignment: Left    # writes `const Order& order`, not `const Order &order`
