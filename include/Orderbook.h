@@ -23,6 +23,8 @@ class OrderBook {
   bool empty() const;
   size_t size() const;
 
+  uint64_t quantityAtPrice(Side side, double price) const;
+
  private:
   // front = oldest = highest priority
   using PriceLevel = std::list<Order>;
