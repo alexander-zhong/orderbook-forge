@@ -5,8 +5,10 @@
 #include <map>
 #include <optional>
 #include <unordered_map>
+#include <vector>
 
 #include "Order.h"
+#include "Trade.h"
 
 class OrderBook {
  public:
@@ -24,6 +26,7 @@ class OrderBook {
   size_t size() const;
 
   uint64_t quantityAtPrice(Side side, double price) const;
+  std::vector<Trade> submit(Order incoming);
 
  private:
   // front = oldest = highest priority

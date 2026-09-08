@@ -1,5 +1,25 @@
 #include "Orderbook.h"
 
+#include <algorithm>
+
+namespace {
+bool crosses(const Order& incoming, const Order& resting) {
+  if (incoming.type == OrderType::MARKET) return true;
+  if (incoming.side == Side::BUY) {
+    return incoming.price >= resting.price;
+  } else {
+    return incoming.price <= resting.price;
+  }
+}
+
+Trade fill(Order& incoming, Order& resting) {
+  uint64_t q = std::min(incoming.quantity, resting.quantity);
+  incoming.quantity -= q;
+  resting.quantity -= q;
+  return Trade{resting.id, incoming.id, resting.price, q};
+}
+}  // namespace
+
 void OrderBook::insert(const Order& order) {
   if (order.side == Side::BUY) {
     PriceLevel& level = bids_[order.price];
@@ -70,4 +90,44 @@ uint64_t OrderBook::quantityAtPrice(Side side, double price) const {
   }
 
   return total_quantity;
+}
+
+std::vector<Trade> OrderBook::submit(Order incoming) {
+  std::vector<Trade> trades;
+
+  if (incoming.side == Side::BUY) {
+    while (incoming.quantity > 0 && !asks_.empty()) {
+      auto best = asks_.begin();
+      Order& resting = best->second.front();
+      if (!crosses(incoming, resting)) break;
+
+      trades.push_back(fill(incoming, resting));
+
+      if (resting.quantity == 0) {
+        order_index_.erase(resting.id);
+        best->second.pop_front();
+        if (best->second.empty()) asks_.erase(best);
+      }
+    }
+  } else {
+    while (incoming.quantity > 0 && !bids_.empty()) {
+      auto best = bids_.begin();
+      Order& resting = best->second.front();
+      if (!crosses(incoming, resting)) break;
+
+      trades.push_back(fill(incoming, resting));
+
+      if (resting.quantity == 0) {
+        order_index_.erase(resting.id);
+        best->second.pop_front();
+        if (best->second.empty()) bids_.erase(best);
+      }
+    }
+  }
+
+  if (incoming.quantity > 0 && incoming.type == OrderType::LIMIT) {
+    insert(incoming);
+  }
+
+  return trades;
 }
